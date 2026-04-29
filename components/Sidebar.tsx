@@ -5,6 +5,7 @@ import SidebarNav from './SidebarNav';
 export default async function Sidebar() {
   let categoriesWithCounts: any[] = [];
   let counts = { allUnread: 0, saved: 0 };
+  let allFeeds: any[] = [];
   let hasError = false;
 
   if (!prisma) {
@@ -30,7 +31,12 @@ export default async function Sidebar() {
       })
     );
 
-    // 🚨 YENİ: Gerçek okunmamış ve kaydedilmiş sayıları veritabanından çekiliyor
+    // Yönetim ekranı için sistemdeki tüm feed'leri çek
+    allFeeds = await prisma.feed.findMany({
+      orderBy: { title: 'asc' },
+    });
+
+    // Gerçek okunmamış ve kaydedilmiş sayıları veritabanından çek
     if (user) {
       const [unreadCount, savedCount] = await Promise.all([
         prisma.item.count({
@@ -65,7 +71,7 @@ export default async function Sidebar() {
       {hasError ? (
         <div className="px-7 py-4 text-sm text-red-500">Connection Failed</div>
       ) : (
-        <SidebarNav categories={categoriesWithCounts} counts={counts} />
+        <SidebarNav categories={categoriesWithCounts} counts={counts} feeds={allFeeds} />
       )}
 
       <div className="p-5 mt-auto border-t border-[--color-border-subtle] bg-[--color-bg-secondary]">
