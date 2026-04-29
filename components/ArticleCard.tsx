@@ -13,9 +13,9 @@ interface ArticleCardProps {
     feed: {
       title: string;
       siteUrl: string | null;
-      // 1. Kategori bilgisini type'a ekliyoruz
-      category?: { name: string } | null; 
+      category?: { name: string } | null;
     };
+    readBy?: any[]; // Okundu bilgisi
   };
   viewMode?: string;
 }
@@ -33,10 +33,12 @@ export default function ArticleCard({ item, viewMode = "list" }: ArticleCardProp
     .replace('about ', '').replace(' ago', ' ago');
 
   const publisherName = item.feed.title;
-  // 2. Artık sabit "Design" değil, veritabanından gelen kendi gerçek kategorisi!
   const categoryTag = item.feed.category?.name || "General Tech"; 
 
- return (
+  // Makale okundu mu? (Okundu dizisi doluysa evet)
+  const isRead = item.readBy && item.readBy.length > 0;
+
+  return (
     <Link href={`/article/${item.id}`} className={`block group outline-none h-full`}>
       <article className={`
         h-full flex flex-col p-6 rounded-[--radius-lg] transition-all duration-300
@@ -45,13 +47,12 @@ export default function ArticleCard({ item, viewMode = "list" }: ArticleCardProp
           : 'border border-transparent hover:border-[--color-border] hover:bg-[--color-bg-secondary] -mx-6'
         }
       `}>
-        {/* 🚨 DÜZELTİLEN İKON VE META BÖLÜMÜ */}
-        <div className="flex items-center gap-2.5 mb-3 text-[12px] font-medium text-zinc-500">
-          {/* İkon Kutusu: Koyu gri arka plan, beyaz harf */}
-          <div className="w-6 h-6 rounded bg-zinc-800 flex items-center justify-center font-bold text-white text-[11px] uppercase shadow-sm flex-shrink-0">
+        {/* İKON VE META BÖLÜMÜ (Okunduysa opaklık düşer) */}
+        <div className={`flex items-center gap-2.5 mb-3 text-[12px] font-medium transition-opacity ${isRead ? 'opacity-60 text-zinc-400' : 'text-zinc-500'}`}>
+          <div className={`w-6 h-6 rounded flex items-center justify-center font-bold text-[11px] uppercase shadow-sm flex-shrink-0 transition-colors ${isRead ? 'bg-zinc-200 text-zinc-500' : 'bg-zinc-800 text-white'}`}>
             {publisherName.substring(0, 1)}
           </div>
-          <span className="font-bold text-zinc-900 truncate max-w-[140px]">
+          <span className={`font-bold truncate max-w-[140px] transition-colors ${isRead ? 'text-zinc-500' : 'text-zinc-900'}`}>
             {publisherName}
           </span>
           <span className="w-1 h-1 rounded-full bg-zinc-300 flex-shrink-0"></span>
@@ -60,8 +61,12 @@ export default function ArticleCard({ item, viewMode = "list" }: ArticleCardProp
           </span>
         </div>
 
+        {/* BAŞLIK (Okunduysa gri ve normal kalınlık, okunmadıysa siyah ve ekstra kalın) */}
         <div className="flex items-start justify-between gap-4 mb-2">
-          <h3 className={`font-extrabold text-[--color-text-primary] group-hover:text-blue-600 transition-colors leading-tight tracking-tight ${viewMode === 'grid' ? 'text-lg line-clamp-2' : 'text-xl'}`}>
+          <h3 className={`transition-colors leading-tight tracking-tight group-hover:text-blue-600 
+            ${isRead ? 'font-semibold text-zinc-500' : 'font-extrabold text-[--color-text-primary]'} 
+            ${viewMode === 'grid' ? 'text-lg line-clamp-2' : 'text-xl'}`}
+          >
             {item.title}
           </h3>
           {viewMode === 'list' && (
@@ -69,15 +74,19 @@ export default function ArticleCard({ item, viewMode = "list" }: ArticleCardProp
           )}
         </div>
 
+        {/* AÇIKLAMA (Okunduysa daha da silik bir metin rengi) */}
         {item.description && (
-          <p className={`text-[14px] text-[--color-text-secondary] leading-relaxed mb-4 ${viewMode === 'grid' ? 'line-clamp-2' : 'line-clamp-3'}`}>
+          <p className={`text-[14px] leading-relaxed mb-4 transition-colors
+            ${isRead ? 'text-zinc-400' : 'text-[--color-text-secondary]'} 
+            ${viewMode === 'grid' ? 'line-clamp-2' : 'line-clamp-3'}`}>
             {item.description.replace(/<[^>]*>?/gm, '').trim()}
           </p>
         )}
 
+        {/* TAG VE YAZAR */}
         <div className="mt-auto pt-3 flex items-center justify-between border-t border-transparent group-hover:border-slate-100 transition-colors">
           <span 
-            className="text-[10px] font-extrabold px-2.5 py-1 rounded-[4px] tracking-tight uppercase"
+            className={`text-[10px] font-extrabold px-2.5 py-1 rounded-[4px] tracking-tight uppercase transition-opacity ${isRead ? 'opacity-60' : 'opacity-100'}`}
             style={{ 
               backgroundColor: tagColorMap[categoryTag]?.bg || "#f1f5f9", 
               color: tagColorMap[categoryTag]?.text || "#64748b" 

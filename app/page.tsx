@@ -2,13 +2,13 @@ import { prisma } from "@/lib/db";
 import SyncButton from "@/components/SyncButton";
 import ArticleCard from "@/components/ArticleCard";
 import ViewToggle from "@/components/ViewToggle";
-import SearchBar from "@/components/SearchBar"; // Yeni Arama Bileşeni
+import SearchBar from "@/components/SearchBar";
 import { format, isToday, isYesterday, subMonths } from 'date-fns';
 
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; view?: string; q?: string }>; // q (arama) eklendi
+  searchParams: Promise<{ category?: string; view?: string; q?: string }>;
 }) {
   if (!prisma) {
     return <div className="p-10 text-red-500">Kritik Hata: Prisma başlatılamadı!</div>;
@@ -19,7 +19,6 @@ export default async function Home({
   const viewMode = params.view || "list";
   const searchQuery = params.q || "";
 
-  // Prisma Filtreleme Mantığı (Hem Kategori Hem Arama için)
   const whereClause: any = {
     ...(activeCategoryName ? { feed: { category: { name: activeCategoryName } } } : {}),
     ...(searchQuery ? {
@@ -30,6 +29,9 @@ export default async function Home({
     } : {})
   };
 
+  // Demo kullanıcıyı bul (Okundu bilgisi için)
+  const user = await prisma.user.findFirst();
+
   const [feedCount, items] = await Promise.all([
     prisma.feed.count(),
     prisma.item.findMany({
@@ -38,14 +40,17 @@ export default async function Home({
       take: 50,
       include: {
         feed: {
-          // 🚨 KRİTİK EKLENTİ: feed'in içinden category name'i de getiriyoruz
           select: { title: true, siteUrl: true, category: { select: { name: true } } }
-        }
+        },
+        // Kullanıcı varsa bu makaleye ait readState'leri getir
+        readBy: user ? { where: { userId: user.id } } : false
       }
     })
   ]);
 
-  // Gruplama Mantığı (Aynı Kalacak)
+  // Sadece okunmamış makalelerin sayısını hesapla
+  const unreadCount = items.filter((item: any) => !item.readBy || item.readBy.length === 0).length;
+
   const groupedItems: { [key: string]: typeof items } = {};
   items.forEach((item) => {
     const pubDate = new Date(item.pubDate);
@@ -71,12 +76,11 @@ export default async function Home({
             {searchQuery ? `Search: "${searchQuery}"` : (activeCategoryName ? activeCategoryName : "All Items")}
           </h1>
           <p className="text-[18px] font-medium text-[--color-text-tertiary] tracking-tight">
-            {items.length} latest articles {activeCategoryName ? `in ${activeCategoryName}` : `from your ${feedCount} subscriptions`}.
+            {unreadCount} unread articles {activeCategoryName ? `in ${activeCategoryName}` : `from your ${feedCount} subscriptions`}.
           </p>
         </div>
 
         <div className="flex items-center gap-4 flex-wrap">
-          {/* SAHTE INPUT'U SİLİP YENİ ÇALIŞAN SEARCHBAR'I KOYDUK */}
           <SearchBar />
           <SyncButton /> 
           <ViewToggle />
@@ -84,10 +88,10 @@ export default async function Home({
       </header>
 
       <main className="space-y-10">
-        {/* ... (Makale Listeleme Kısmı Aynı Kalacak) ... */}
         {items.length === 0 ? (
           <div className="text-center py-24 border-2 border-dashed border-[--color-border] rounded-[--radius-xl] bg-[--color-bg-secondary]/50">
             <h2 className="text-2xl font-bold text-[--color-text-primary]">No articles found</h2>
+            <p className="text-[16px] text-[--color-text-tertiary] mt-3">Try clearing your search or syncing feeds.</p>
           </div>
         ) : (
           Object.keys(groupedItems).map((groupKey) => (
