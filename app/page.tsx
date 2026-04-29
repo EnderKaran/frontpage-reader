@@ -19,6 +19,7 @@ export default async function Home({
   const viewMode = params.view || "list";
   const searchQuery = params.q || "";
 
+  // Filtreleme Koşulları
   const whereClause: any = {
     ...(activeCategoryName ? { feed: { category: { name: activeCategoryName } } } : {}),
     ...(searchQuery ? {
@@ -29,9 +30,15 @@ export default async function Home({
     } : {})
   };
 
-  // Demo kullanıcıyı bul (Okundu bilgisi için)
-  const user = await prisma.user.findFirst();
+  // Demo Kullanıcıyı bul veya yoksa oluştur
+  let user = await prisma.user.findFirst();
+  if (!user) {
+    user = await prisma.user.create({
+      data: { email: "demo@frontpage.local", password: "password123" }
+    });
+  }
 
+  // Verileri paralel çekme
   const [feedCount, items] = await Promise.all([
     prisma.feed.count(),
     prisma.item.findMany({
@@ -42,15 +49,17 @@ export default async function Home({
         feed: {
           select: { title: true, siteUrl: true, category: { select: { name: true } } }
         },
-        // Kullanıcı varsa bu makaleye ait readState'leri getir
-        readBy: user ? { where: { userId: user.id } } : false
+        // Kullanıcıya özel durumları çekiyoruz
+        readBy: { where: { userId: user.id } },
+        savedBy: { where: { userId: user.id } }
       }
     })
   ]);
 
-  // Sadece okunmamış makalelerin sayısını hesapla
+  // Okunmamış sayısını hesapla
   const unreadCount = items.filter((item: any) => !item.readBy || item.readBy.length === 0).length;
 
+  // Tarih gruplandırması
   const groupedItems: { [key: string]: typeof items } = {};
   items.forEach((item) => {
     const pubDate = new Date(item.pubDate);
@@ -91,7 +100,6 @@ export default async function Home({
         {items.length === 0 ? (
           <div className="text-center py-24 border-2 border-dashed border-[--color-border] rounded-[--radius-xl] bg-[--color-bg-secondary]/50">
             <h2 className="text-2xl font-bold text-[--color-text-primary]">No articles found</h2>
-            <p className="text-[16px] text-[--color-text-tertiary] mt-3">Try clearing your search or syncing feeds.</p>
           </div>
         ) : (
           Object.keys(groupedItems).map((groupKey) => (

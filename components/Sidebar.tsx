@@ -12,24 +12,40 @@ export default async function Sidebar() {
   }
 
   try {
-    // Tüm kategorileri isim sırasına göre çekiyoruz
+    // Demo kullanıcıyı bul
+    let user = await prisma.user.findFirst();
+
+    // Tüm kategorileri isim sırasına göre çek
     const rawCategories = await prisma.category.findMany({
       orderBy: { name: 'asc' }
     });
 
-    // Her kategori için, ona bağlı olan makalelerin (items) TOPLAM GERÇEK sayısını hesaplıyoruz
+    // Kategorilerin içindeki toplam makale sayıları
     categoriesWithCounts = await Promise.all(
       rawCategories.map(async (cat) => {
         const itemCount = await prisma.item.count({
           where: { feed: { categoryId: cat.id } }
         });
-        // SidebarNav'in beklediği formata uyduruyoruz
         return { ...cat, _count: { feeds: itemCount } }; 
       })
     );
 
-    const allItemsCount = await prisma.item.count();
-    counts = { allUnread: allItemsCount, saved: 0 };
+    // 🚨 YENİ: Gerçek okunmamış ve kaydedilmiş sayıları veritabanından çekiliyor
+    if (user) {
+      const [unreadCount, savedCount] = await Promise.all([
+        prisma.item.count({
+          where: { NOT: { readBy: { some: { userId: user.id } } } }
+        }),
+        prisma.savedItem.count({
+          where: { userId: user.id }
+        })
+      ]);
+      counts = { allUnread: unreadCount, saved: savedCount };
+    } else {
+      const allItemsCount = await prisma.item.count();
+      counts = { allUnread: allItemsCount, saved: 0 };
+    }
+
   } catch (error) {
     console.error("[Error] Sidebar Data Fetch:", error);
     hasError = true;
@@ -38,7 +54,6 @@ export default async function Sidebar() {
   return (
     <aside className="w-[--sidebar-width] bg-[--color-bg-primary] border-r border-[--color-border] flex flex-col h-screen fixed left-0 top-0 overflow-y-auto z-50">
       <div className="p-7 flex items-center gap-3">
-        {/* Arka planı açık gri/mavi tonunda, ikonu ise koyu mavi yapıyoruz */}
         <div className="w-9 h-9 bg-slate-100 rounded-md flex items-center justify-center border border-slate-200 shadow-sm">
           <Library size={20} strokeWidth={2.5} className="text-blue-700" />
         </div>

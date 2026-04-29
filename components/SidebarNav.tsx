@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { Inbox, Bookmark, Hash } from "lucide-react";
 import React from "react";
 
-// Kategori isimlerini referans görseldeki CSS değişkenleriyle eşleyen harita
 const categoryColorMap: { [key: string]: string } = {
   "AI & ML": "var(--tag-ai-text)",
   "Backend & DevOps": "var(--tag-backend-text)",
@@ -20,7 +19,6 @@ export default function SidebarNav({ categories, counts }: { categories: any[], 
 
   return (
     <nav className="flex-1 px-4 space-y-1">
-      {/* All Items & Saved (Referans görseldeki gibi okunmamış sayıları ekledik) */}
       <NavItem
         href="/"
         icon={<Inbox size={18} />}
@@ -63,17 +61,19 @@ function NavItem({ icon, label, count, active = false, href, color }: { icon: Re
       <div className={`
         flex items-center justify-between px-3 py-2.5 rounded-[--radius-md] cursor-pointer transition-all duration-200 group
         ${active
-          ? 'bg-[--color-accent-subtle] text-[--color-accent]' // Referans görseldeki aktif durum mavi
+          ? 'bg-[--color-accent-subtle] text-[--color-accent]' 
           : 'text-[--color-text-secondary] hover:bg-[--color-bg-tertiary] hover:text-[--color-text-primary]'}
       `}>
         <div className="flex items-center gap-3">
           <span className={`${active ? 'text-[--color-accent]' : 'text-[--color-text-tertiary] group-hover:text-[--color-text-secondary]'}`} style={!active ? { color }: {}}>
             {icon}
           </span>
-          <span className="text-[--text-sm] font-semibold">{label}</span>
+          <span className="text-[14px] font-semibold">{label}</span>
         </div>
+        
+        {/* 🚨 DÜZELTİLDİ: Sayının arkasındaki background kaldırıldı. Sadece aktifse mavi, değilse gri font */}
         {count > 0 && (
-          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${active ? 'bg-[--color-accent] text-white' : 'bg-[--color-bg-tertiary] text-[--color-text-tertiary] opacity-80'}`}>
+          <span className={`text-[12px] font-bold ${active ? 'text-[--color-accent]' : 'text-[--color-text-tertiary] opacity-80'}`}>
             {count}
           </span>
         )}

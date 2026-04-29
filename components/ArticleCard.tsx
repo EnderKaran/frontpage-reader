@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { formatDistanceToNow } from 'date-fns';
+import BookmarkButton from "./BookmarkButton";
 
 interface ArticleCardProps {
   item: {
@@ -15,7 +16,8 @@ interface ArticleCardProps {
       siteUrl: string | null;
       category?: { name: string } | null;
     };
-    readBy?: any[]; // Okundu bilgisi
+    readBy?: any[];
+    savedBy?: any[];
   };
   viewMode?: string;
 }
@@ -35,11 +37,11 @@ export default function ArticleCard({ item, viewMode = "list" }: ArticleCardProp
   const publisherName = item.feed.title;
   const categoryTag = item.feed.category?.name || "General Tech"; 
 
-  // Makale okundu mu? (Okundu dizisi doluysa evet)
   const isRead = item.readBy && item.readBy.length > 0;
+  const isSaved = !!(item.savedBy && item.savedBy.length > 0);
 
   return (
-    <Link href={`/article/${item.id}`} className={`block group outline-none h-full`}>
+    <Link href={`/article/${item.id}`} className="block group outline-none h-full">
       <article className={`
         h-full flex flex-col p-6 rounded-[--radius-lg] transition-all duration-300
         ${viewMode === 'grid' 
@@ -47,21 +49,19 @@ export default function ArticleCard({ item, viewMode = "list" }: ArticleCardProp
           : 'border border-transparent hover:border-[--color-border] hover:bg-[--color-bg-secondary] -mx-6'
         }
       `}>
-        {/* İKON VE META BÖLÜMÜ (Okunduysa opaklık düşer) */}
+        {/* Meta Satırı */}
         <div className={`flex items-center gap-2.5 mb-3 text-[12px] font-medium transition-opacity ${isRead ? 'opacity-60 text-zinc-400' : 'text-zinc-500'}`}>
-          <div className={`w-6 h-6 rounded flex items-center justify-center font-bold text-[11px] uppercase shadow-sm flex-shrink-0 transition-colors ${isRead ? 'bg-zinc-200 text-zinc-500' : 'bg-zinc-800 text-white'}`}>
+          <div className={`w-6 h-6 rounded flex items-center justify-center font-bold text-[11px] uppercase shadow-sm transition-colors ${isRead ? 'bg-zinc-200 text-zinc-500' : 'bg-zinc-800 text-white'}`}>
             {publisherName.substring(0, 1)}
           </div>
-          <span className={`font-bold truncate max-w-[140px] transition-colors ${isRead ? 'text-zinc-500' : 'text-zinc-900'}`}>
+          <span className={`font-bold truncate max-w-[140px] ${isRead ? 'text-zinc-500' : 'text-zinc-900'}`}>
             {publisherName}
           </span>
-          <span className="w-1 h-1 rounded-full bg-zinc-300 flex-shrink-0"></span>
-          <span className="truncate">
-            {relativeTime}
-          </span>
+          <span className="w-1 h-1 rounded-full bg-zinc-300"></span>
+          <span className="truncate">{relativeTime}</span>
         </div>
 
-        {/* BAŞLIK (Okunduysa gri ve normal kalınlık, okunmadıysa siyah ve ekstra kalın) */}
+        {/* Başlık */}
         <div className="flex items-start justify-between gap-4 mb-2">
           <h3 className={`transition-colors leading-tight tracking-tight group-hover:text-blue-600 
             ${isRead ? 'font-semibold text-zinc-500' : 'font-extrabold text-[--color-text-primary]'} 
@@ -74,7 +74,7 @@ export default function ArticleCard({ item, viewMode = "list" }: ArticleCardProp
           )}
         </div>
 
-        {/* AÇIKLAMA (Okunduysa daha da silik bir metin rengi) */}
+        {/* Açıklama */}
         {item.description && (
           <p className={`text-[14px] leading-relaxed mb-4 transition-colors
             ${isRead ? 'text-zinc-400' : 'text-[--color-text-secondary]'} 
@@ -83,23 +83,27 @@ export default function ArticleCard({ item, viewMode = "list" }: ArticleCardProp
           </p>
         )}
 
-        {/* TAG VE YAZAR */}
+        {/* Alt Bilgi & Bookmark */}
         <div className="mt-auto pt-3 flex items-center justify-between border-t border-transparent group-hover:border-slate-100 transition-colors">
-          <span 
-            className={`text-[10px] font-extrabold px-2.5 py-1 rounded-[4px] tracking-tight uppercase transition-opacity ${isRead ? 'opacity-60' : 'opacity-100'}`}
-            style={{ 
-              backgroundColor: tagColorMap[categoryTag]?.bg || "#f1f5f9", 
-              color: tagColorMap[categoryTag]?.text || "#64748b" 
-            }}
-          >
-            {categoryTag}
-          </span>
-          
-          {item.author && viewMode === 'list' && (
-            <span className="text-[11px] font-medium text-[--color-text-tertiary]">
-              by {item.author.replace(/by /g, '')}
+          <div className="flex items-center gap-3">
+            <span 
+              className={`text-[10px] font-extrabold px-2.5 py-1 rounded-[4px] tracking-tight uppercase transition-opacity ${isRead ? 'opacity-60' : 'opacity-100'}`}
+              style={{ 
+                backgroundColor: tagColorMap[categoryTag]?.bg || "#f1f5f9", 
+                color: tagColorMap[categoryTag]?.text || "#64748b" 
+              }}
+            >
+              {categoryTag}
             </span>
-          )}
+            
+            {item.author && viewMode === 'list' && (
+              <span className="text-[11px] font-medium text-[--color-text-tertiary]">
+                by {item.author.replace(/by /g, '')}
+              </span>
+            )}
+          </div>
+
+          <BookmarkButton itemId={item.id} initialSaved={isSaved} />
         </div>
       </article>
     </Link>

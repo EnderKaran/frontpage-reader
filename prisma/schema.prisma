@@ -27,23 +27,39 @@ model Feed {
 }
 
 model Item {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   title       String
-  link        String   @unique
+  link        String      @unique
   description String?
-  content     String?  // Tam içerik/Reader view için
+  content     String?
   author      String?
-  pubDate     DateTime @default(now())
+  pubDate     DateTime
   feedId      String
-  feed        Feed     @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  feed        Feed        @relation(fields: [feedId], references: [id], onDelete: Cascade)
   readBy      ReadState[]
+  savedBy     SavedItem[] 
+  createdAt   DateTime    @default(now())
 }
 
 model User {
   id         String      @id @default(cuid())
   email      String      @unique
   password   String
-  readStates ReadState[]
+  readItems  ReadState[]
+  savedItems SavedItem[] 
+  createdAt  DateTime    @default(now())
+}
+
+model SavedItem {
+  id        String   @id @default(cuid())
+  userId    String
+  itemId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  // Bir kullanıcı aynı makaleyi sadece bir kez kaydedebilir
+  @@unique([userId, itemId]) 
 }
 
 // Okundu/Okunmadı takibi için ilişki tablosu
