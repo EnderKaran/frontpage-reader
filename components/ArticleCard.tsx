@@ -1,8 +1,10 @@
+import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { formatDistanceToNow } from 'date-fns';
 
 interface ArticleCardProps {
   item: {
+    id: string;
     title: string;
     link: string;
     description: string | null;
@@ -11,6 +13,8 @@ interface ArticleCardProps {
     feed: {
       title: string;
       siteUrl: string | null;
+      // 1. Kategori bilgisini type'a ekliyoruz
+      category?: { name: string } | null; 
     };
   };
   viewMode?: string;
@@ -26,20 +30,14 @@ const tagColorMap: { [key: string]: { bg: string, text: string } } = {
 
 export default function ArticleCard({ item, viewMode = "list" }: ArticleCardProps) {
   const relativeTime = formatDistanceToNow(new Date(item.pubDate), { addSuffix: true })
-    .replace('about ', '')
-    .replace(' ago', ' ago');
+    .replace('about ', '').replace(' ago', ' ago');
 
   const publisherName = item.feed.title;
-  // Kategori etiketi için geçici placeholder (Kendi kategorisini çekmek için veritabanı ilişkisi geliştirilebilir)
-  const categoryTag = "Design"; 
+  // 2. Artık sabit "Design" değil, veritabanından gelen kendi gerçek kategorisi!
+  const categoryTag = item.feed.category?.name || "General Tech"; 
 
-  return (
-    <a 
-      href={item.link} 
-      target="_blank" 
-      rel="noopener noreferrer" 
-      className={`block group outline-none h-full`}
-    >
+ return (
+    <Link href={`/article/${item.id}`} className={`block group outline-none h-full`}>
       <article className={`
         h-full flex flex-col p-6 rounded-[--radius-lg] transition-all duration-300
         ${viewMode === 'grid' 
@@ -47,23 +45,23 @@ export default function ArticleCard({ item, viewMode = "list" }: ArticleCardProp
           : 'border border-transparent hover:border-[--color-border] hover:bg-[--color-bg-secondary] -mx-6'
         }
       `}>
-        {/* Meta Satırı */}
-        <div className="flex items-center gap-3 mb-3 text-[12px] font-medium text-[--color-text-tertiary]">
-          <div className="w-5 h-5 rounded-[4px] bg-[--color-accent] flex items-center justify-center font-bold text-white text-[10px] uppercase">
+        {/* 🚨 DÜZELTİLEN İKON VE META BÖLÜMÜ */}
+        <div className="flex items-center gap-2.5 mb-3 text-[12px] font-medium text-zinc-500">
+          {/* İkon Kutusu: Koyu gri arka plan, beyaz harf */}
+          <div className="w-6 h-6 rounded bg-zinc-800 flex items-center justify-center font-bold text-white text-[11px] uppercase shadow-sm flex-shrink-0">
             {publisherName.substring(0, 1)}
           </div>
-          <span className="font-bold text-[--color-text-primary] truncate max-w-[120px]">
+          <span className="font-bold text-zinc-900 truncate max-w-[140px]">
             {publisherName}
           </span>
-          <span className="w-1 h-1 rounded-full bg-[--color-border-subtle]"></span>
+          <span className="w-1 h-1 rounded-full bg-zinc-300 flex-shrink-0"></span>
           <span className="truncate">
             {relativeTime}
           </span>
         </div>
 
-        {/* Başlık */}
         <div className="flex items-start justify-between gap-4 mb-2">
-          <h3 className={`font-extrabold text-[--color-text-primary] group-hover:text-[--color-accent] transition-colors leading-tight tracking-tight ${viewMode === 'grid' ? 'text-lg line-clamp-2' : 'text-xl'}`}>
+          <h3 className={`font-extrabold text-[--color-text-primary] group-hover:text-blue-600 transition-colors leading-tight tracking-tight ${viewMode === 'grid' ? 'text-lg line-clamp-2' : 'text-xl'}`}>
             {item.title}
           </h3>
           {viewMode === 'list' && (
@@ -71,20 +69,18 @@ export default function ArticleCard({ item, viewMode = "list" }: ArticleCardProp
           )}
         </div>
 
-        {/* Açıklama */}
         {item.description && (
           <p className={`text-[14px] text-[--color-text-secondary] leading-relaxed mb-4 ${viewMode === 'grid' ? 'line-clamp-2' : 'line-clamp-3'}`}>
             {item.description.replace(/<[^>]*>?/gm, '').trim()}
           </p>
         )}
 
-        {/* Alt Kısım: Tag ve Opsiyonel Bilgiler */}
-        <div className="mt-auto pt-2 flex items-center justify-between">
+        <div className="mt-auto pt-3 flex items-center justify-between border-t border-transparent group-hover:border-slate-100 transition-colors">
           <span 
             className="text-[10px] font-extrabold px-2.5 py-1 rounded-[4px] tracking-tight uppercase"
             style={{ 
-              backgroundColor: tagColorMap[categoryTag]?.bg || "var(--color-bg-tertiary)", 
-              color: tagColorMap[categoryTag]?.text || "var(--color-text-tertiary)" 
+              backgroundColor: tagColorMap[categoryTag]?.bg || "#f1f5f9", 
+              color: tagColorMap[categoryTag]?.text || "#64748b" 
             }}
           >
             {categoryTag}
@@ -97,6 +93,6 @@ export default function ArticleCard({ item, viewMode = "list" }: ArticleCardProp
           )}
         </div>
       </article>
-    </a>
+    </Link>
   );
 }

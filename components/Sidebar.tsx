@@ -2,9 +2,8 @@ import { CheckCircle2, AlertCircle, Library } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import SidebarNav from './SidebarNav';
 
-
 export default async function Sidebar() {
-  let categories: any[] = [];
+  let categoriesWithCounts: any[] = [];
   let counts = { allUnread: 0, saved: 0 };
   let hasError = false;
 
@@ -13,23 +12,24 @@ export default async function Sidebar() {
   }
 
   try {
-    // Verileri paralel ve güvenli çekiyoruz
-    const [categoriesData, allUnreadCount, savedCount] = await Promise.all([
-      prisma.category.findMany({
-        include: {
-          _count: {
-            select: { feeds: { where: { status: 'active' } } }
-          }
-        },
-        orderBy: { name: 'asc' }
-      }),
-      // Gelecekte User ID ile okunmamış takibi yapacağız, şimdilik toplam makale sayısı
-      prisma.item.count(), 
-      // Gelecekte User ID ile "Saved" takibi yapacağız, şimdilik 0
-      0 
-    ]);
-    categories = categoriesData;
-    counts = { allUnread: allUnreadCount, saved: savedCount };
+    // Tüm kategorileri isim sırasına göre çekiyoruz
+    const rawCategories = await prisma.category.findMany({
+      orderBy: { name: 'asc' }
+    });
+
+    // Her kategori için, ona bağlı olan makalelerin (items) TOPLAM GERÇEK sayısını hesaplıyoruz
+    categoriesWithCounts = await Promise.all(
+      rawCategories.map(async (cat) => {
+        const itemCount = await prisma.item.count({
+          where: { feed: { categoryId: cat.id } }
+        });
+        // SidebarNav'in beklediği formata uyduruyoruz
+        return { ...cat, _count: { feeds: itemCount } }; 
+      })
+    );
+
+    const allItemsCount = await prisma.item.count();
+    counts = { allUnread: allItemsCount, saved: 0 };
   } catch (error) {
     console.error("[Error] Sidebar Data Fetch:", error);
     hasError = true;
@@ -38,8 +38,9 @@ export default async function Sidebar() {
   return (
     <aside className="w-[--sidebar-width] bg-[--color-bg-primary] border-r border-[--color-border] flex flex-col h-screen fixed left-0 top-0 overflow-y-auto z-50">
       <div className="p-7 flex items-center gap-3">
-        <div className="w-9 h-9 bg-[--color-accent] rounded-[--radius-md] flex items-center justify-center shadow-sm text-white">
-          <Library size={20} strokeWidth={2.5} />
+        {/* Arka planı açık gri/mavi tonunda, ikonu ise koyu mavi yapıyoruz */}
+        <div className="w-9 h-9 bg-slate-100 rounded-md flex items-center justify-center border border-slate-200 shadow-sm">
+          <Library size={20} strokeWidth={2.5} className="text-blue-700" />
         </div>
         <h1 className="text-xl font-bold text-[--color-text-primary] tracking-tight">
           Frontpage
@@ -49,10 +50,9 @@ export default async function Sidebar() {
       {hasError ? (
         <div className="px-7 py-4 text-sm text-red-500">Connection Failed</div>
       ) : (
-        <SidebarNav categories={categories} counts={counts} />
+        <SidebarNav categories={categoriesWithCounts} counts={counts} />
       )}
 
-      {/* Referans görseldeki gibi daha cilalı system status */}
       <div className="p-5 mt-auto border-t border-[--color-border-subtle] bg-[--color-bg-secondary]">
         <div className={`flex items-center gap-2 text-[11px] font-semibold ${hasError ? 'text-red-500' : 'text-emerald-600'}`}>
           {hasError ? <AlertCircle size={14} /> : <CheckCircle2 size={14} />}
