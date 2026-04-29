@@ -8,9 +8,20 @@ const parser = new Parser({
   }
 });
 
+// ÇELİK KALKAN: Next.js ve Bot Korumalarına karşı kesin zaman aşımı
+const fetchWithTimeout = async (url: string, timeoutMs: number = 8000) => {
+  const timeoutPromise = new Promise<any>((_, reject) => {
+    setTimeout(() => reject(new Error("Yanıt süresi aşıldı (Bot korumasına takıldı veya site yavaş)")), timeoutMs);
+  });
+  
+  return Promise.race([
+    parser.parseURL(url),
+    timeoutPromise
+  ]);
+};
+
 export async function POST() {
   try {
-    // 1. Veritabanındaki aktif feed'leri al
     const feeds = await prisma.feed.findMany({
       where: { status: 'active' }
     });
@@ -21,13 +32,12 @@ export async function POST() {
 
     let newItemsCount = 0;
 
-    // 2. İşlemleri paralel yapmak için bir harita (map) oluşturuyoruz
-    const syncPromises = feeds.map(async (feed) => {
+    for (const feed of feeds) {
       try {
-        console.log(`📡 Eşzamanlı çekiliyor: ${feed.title}...`);
-        const parsedFeed = await parser.parseURL(feed.url);
+        console.log(`[Bilgi] Çekiliyor: ${feed.title}...`);
         
-        let feedItemCount = 0;
+        // parser.parseURL yerine kendi güvenli fonksiyonumuzu kullanıyoruz
+        const parsedFeed = await fetchWithTimeout(feed.url, 8000);
 
         for (const item of parsedFeed.items) {
           if (!item.link || !item.title) continue;
@@ -40,12 +50,12 @@ export async function POST() {
               link: item.link,
               description: item.contentSnippet?.substring(0, 300) || item.summary?.substring(0, 300) || '',
               content: item['content:encoded'] || item.content || '',
-              author: item.creator || (item as any).author || feed.title,
+              author: item.creator || item.author || feed.title,
               pubDate: item.pubDate ? new Date(item.pubDate) : new Date(),
               feedId: feed.id
             }
           });
-          feedItemCount++;
+          newItemsCount++;
         }
 
         // Feed güncellenme tarihini yenile
@@ -54,22 +64,11 @@ export async function POST() {
           data: { lastFetchedAt: new Date() }
         });
 
-        return feedItemCount;
       } catch (error: any) {
-        console.error(`❌ ${feed.title} kaynağında hata:`, error.message);
-        return 0; // Hata durumunda 0 öğe eklendi say
+        // Hata alan kaynağı konsola yazdır ama sistemi durdurma, diğerine geç
+        console.error(`[Atlandı] ${feed.title} kaynağı pas geçildi:`, error.message);
       }
-    });
-
-    // 3. Bütün paralel işlemlerin bitmesini bekle
-    const results = await Promise.allSettled(syncPromises);
-
-    // Başarıyla eklenen toplam öğe sayısını hesapla
-    results.forEach((result) => {
-      if (result.status === 'fulfilled') {
-        newItemsCount += result.value;
-      }
-    });
+    }
 
     return NextResponse.json({ 
       success: true, 
@@ -78,7 +77,7 @@ export async function POST() {
     });
 
   } catch (error: any) {
-    console.error("🚨 API Sync Kritik Hata:", error);
+    console.error("[Kritik Hata] API Sync başarısız:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
