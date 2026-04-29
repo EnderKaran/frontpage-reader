@@ -1,6 +1,45 @@
 @import "tailwindcss";
 @import "./tokens.css";
 
+@layer base {
+  :root {
+    --color-bg-primary: #ffffff;
+    --color-bg-secondary: #f6f7fb; /* Referans görseldeki o hafif gri-mavi arka plan */
+    --color-bg-tertiary: #eef1f9;
+
+    --color-border: #e0e5ed;
+    --color-border-subtle: #f1f4f8;
+
+    --color-accent: #0056e0; /* Referans görseldeki ana mavi */
+    --color-accent-subtle: #e6f0ff; /* Seçili öğeler için hafif mavi arka plan */
+
+    --color-text-primary: #121417; /* Kalın başlıklar */
+    --color-text-secondary: #4a5463; /* Açıklama metinleri */
+    --color-text-tertiary: #8792a2; /* Meta veriler, tarihler */
+
+    /* Referans görseldeki kategori etiketleri için renkler */
+    --tag-frontend-bg: #e6f0ff;
+    --tag-frontend-text: #0056e0;
+    --tag-css-bg: #ffeded;
+    --tag-css-text: #e00000;
+    --tag-smashing-bg: #ffeded;
+    --tag-smashing-text: #e00000;
+    --tag-design-bg: #ffe6ff;
+    --tag-design-text: #a800a8;
+    --tag-backend-bg: #fff5e6;
+    --tag-backend-text: #e08e00;
+    --tag-ai-bg: #f0e6ff;
+    --tag-ai-text: #7300e0;
+    --tag-general-bg: #e6fff0;
+    --tag-general-text: #00a83e;
+
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 10px;
+    --radius-xl: 14px;
+  }
+}
+
 @theme inline {
   --color-bg-primary: var(--color-bg-primary);
   --color-bg-secondary: var(--color-bg-secondary);
