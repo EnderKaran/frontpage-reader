@@ -1,6 +1,15 @@
 import { Suspense } from "react";
 import Sidebar from '@/components/Sidebar';
 import './tailwind.css';
+import { Metadata } from "next/dist/lib/metadata/types/metadata-interface";
+
+export const metadata: Metadata = {
+  title: "Frontpage | Your Personal RSS Reader",
+  description: "A clean, modern RSS reader for keeping up with your favorite tech feeds.",
+  icons: {
+    icon: "/favicon.ico", // Eğer bir logon varsa public klasörüne atıp ismini buraya yazabilirsin
+  },
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
