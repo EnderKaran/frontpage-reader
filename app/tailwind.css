@@ -4,6 +4,7 @@
 
 @layer base {
   :root {
+    --sidebar-width: 280px;
     --color-bg-primary: #ffffff;
     --color-bg-secondary: #f6f7fb; /* Referans görseldeki o hafif gri-mavi arka plan */
     --color-bg-tertiary: #eef1f9;
@@ -102,3 +103,4 @@
   --container-feed: 60rem;
   --container-page: 80rem;
 }
+

@@ -76,3 +76,33 @@ export async function deleteFeed(feedId: string) {
     return { success: false, error: "Silme işlemi başarısız oldu." };
   }
 }
+export async function getMoreItems(skip: number, categoryName?: string, searchQuery?: string) {
+  const user = await prisma.user.findFirst();
+
+  // Ana sayfadaki filtrelerin aynısını burada da uyguluyoruz
+  const whereClause: any = {
+    ...(categoryName ? { feed: { category: { name: categoryName } } } : {}),
+    ...(searchQuery ? {
+      OR: [
+        { title: { contains: searchQuery, mode: "insensitive" } },
+        { description: { contains: searchQuery, mode: "insensitive" } },
+      ]
+    } : {})
+  };
+
+  const items = await prisma.item.findMany({
+    where: whereClause,
+    orderBy: { pubDate: 'desc' },
+    skip: skip, // İlk 50'yi atla, sonrakileri getir
+    take: 50,   // Her seferinde 50 yeni makale getir
+    include: {
+      feed: {
+        select: { title: true, siteUrl: true, category: { select: { name: true } } }
+      },
+      readBy: user ? { where: { userId: user.id } } : false,
+      savedBy: user ? { where: { userId: user.id } } : false
+    }
+  });
+
+  return items;
+}
