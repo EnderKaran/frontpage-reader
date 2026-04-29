@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Category {
+  id    String @id @default(cuid())
+  name  String @unique
+  feeds Feed[]
+}
+
+model Feed {
+  id            String    @id @default(cuid())
+  url           String    @unique
+  title         String
+  description   String?
+  siteUrl       String?
+  status        String    @default("active") // active, stale, error
+  lastFetchedAt DateTime  @default(now())
+  categoryId    String?
+  category      Category? @relation(fields: [categoryId], references: [id])
+  items         Item[]
+}
+
+model Item {
+  id          String   @id @default(cuid())
+  title       String
+  link        String   @unique
+  description String?
+  content     String?  // Tam içerik/Reader view için
+  author      String?
+  pubDate     DateTime @default(now())
+  feedId      String
+  feed        Feed     @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  readBy      ReadState[]
+}
+
+model User {
+  id         String      @id @default(cuid())
+  email      String      @unique
+  password   String
+  readStates ReadState[]
+}
+
+// Okundu/Okunmadı takibi için ilişki tablosu
+model ReadState {
+  id     String @id @default(cuid())
+  userId String
+  itemId String
+  user   User   @relation(fields: [userId], references: [id])
+  item   Item   @relation(fields: [itemId], references: [id])
+
+  @@unique([userId, itemId])
+}
